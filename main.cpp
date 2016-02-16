@@ -54,7 +54,12 @@ void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned c
 
 void DrawLine(int X1, int Y1, int X2, int Y2, unsigned char Red, unsigned char Green, unsigned char Blue, unsigned char* Buffer)
 {
+	float yIncrease = (Y2 - Y1)/(X2 - X1);
 
+	for (int i = X1; i < X2; i++)
+	{
+		Buffer
+	}
 }
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
