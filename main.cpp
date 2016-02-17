@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <math.h>
 
 int Running = 1;
 int BufferWidth = 1600;
@@ -14,6 +15,11 @@ typedef struct dibinfo_s
 } dibinfo_t;
 
 dibinfo_t BitMapInfo = { 0 };
+
+inline int Offset(int Width, int X, int Y)
+{
+	return Y * Width + X;
+}
 
 void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned char Green, unsigned char Blue, unsigned char* Buffer)
 {
@@ -54,11 +60,33 @@ void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned c
 
 void DrawLine(int X1, int Y1, int X2, int Y2, unsigned char Red, unsigned char Green, unsigned char Blue, unsigned char* Buffer)
 {
-	float yIncrease = (Y2 - Y1)/(X2 - X1);
+	float yIncrease = (Y2 - (float)Y1)/(X2 - (float)X1);
+	float currentY = Y1;
+	int* BufferWalker = (int*)Buffer;
 
 	for (int i = X1; i < X2; i++)
 	{
-		Buffer
+		int offset1 = Offset(BufferWidth, i, floor(currentY));
+		int offset2 = Offset(BufferWidth, i, floor(currentY + 1));
+		float frac1 = 1 - (currentY - floor(currentY));
+		float frac2 = 1 - frac1;
+
+		int currentColor1 = BufferWalker[offset1];
+		int currentColor2 = BufferWalker[offset2];
+
+		int red1 = (Red * frac1) + ((currentColor1 >> 16) * (1 - frac1));
+		int red2 = (Red * frac2) + ((currentColor2 >> 16) * (1 - frac2));
+		int green1 = (Green * frac1) + ((currentColor1 & 0x0000ff00 >> 8) * (1 - frac1));
+		int green2 = (Green * frac2) + ((currentColor2 & 0x0000ff00 >> 8) * (1 - frac2));
+		int blue1 = (Blue * frac1) + ((currentColor1 & 0x000000ff) * (1 - frac1));
+		int blue2 = (Blue * frac2) + ((currentColor2 & 0x000000ff) * (1 - frac2));
+
+		unsigned int Color1 = ((red1 << 16) | (green1 << 8) | blue1);
+		unsigned int Color2 = ((red2 << 16) | (green2 << 8) | blue2);
+
+		BufferWalker[offset1] = Color1;
+		BufferWalker[offset2] = Color2;
+		currentY += yIncrease;
 	}
 }
 
@@ -163,11 +191,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		{
 			for (int Width = 0; Width < BufferWidth; Width++)
 			{
-				*MemoryWalker++ = 32;
+				*MemoryWalker++ = 0;
 			}
 		}
 
-		DrawRect(10, 10, 300, 150, 255, 0, 255, BackBuffer);
+		DrawLine(100, 100, 800, 600, 255, 255, 255, BackBuffer);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,
