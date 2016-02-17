@@ -5,7 +5,7 @@ REM call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat x
 set DEBUGVARS=/Od /Zi
 set RELEASEVARS=/O2 /Oi
 
-set files=../main.cpp ../host.cpp
+set files=../main.cpp
 
 set link=user32.lib gdi32.lib
 

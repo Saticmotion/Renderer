@@ -7,7 +7,6 @@ int BufferHeight = 900;
 int BytesPerPixel = 4;
 unsigned char* BackBuffer;
 
-
 typedef struct dibinfo_s
 {
 	BITMAPINFOHEADER bmiHeader;
@@ -191,11 +190,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		{
 			for (int Width = 0; Width < BufferWidth; Width++)
 			{
-				*MemoryWalker++ = 0;
+				*MemoryWalker++ = 0x00000000;
 			}
 		}
 
-		DrawLine(100, 100, 800, 600, 255, 255, 255, BackBuffer);
+		DrawLine(100, 100, 800, 500, 255, 255, 255, BackBuffer);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,
