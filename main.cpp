@@ -13,11 +13,41 @@ typedef struct dibinfo_s
 	RGBQUAD          acolors[256];
 } dibinfo_t;
 
+typedef union Color
+{
+	int argb;
+	struct
+	{
+		unsigned char red;
+		unsigned char green;
+		unsigned char blue;
+		unsigned char alpha;
+	};
+} Color;
+
 dibinfo_t BitMapInfo = { 0 };
 
 inline int Offset(int Width, int X, int Y)
 {
 	return Y * Width + X;
+}
+
+inline Color MixColors(Color color1, Color color2, float color1frac)
+{
+	Color newColor = { 0 };
+
+	newColor.red = (color1.red * color1frac) + (color2.red * (1 - color1frac));
+	newColor.green = (color1.green * color1frac) + (color2.green * (1 - color1frac));
+	newColor.blue = (color1.blue * color1frac) + (color2.blue * (1 - color1frac));
+
+	return newColor;
+}
+
+inline void Swap(int* value1, int* value2)
+{
+	int* temp = value1;
+	value1 = value2;
+	value2 = temp;
 }
 
 void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned char Green, unsigned char Blue, unsigned char* Buffer)
@@ -57,35 +87,67 @@ void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned c
 	}
 }
 
-void DrawLine(int X1, int Y1, int X2, int Y2, unsigned char Red, unsigned char Green, unsigned char Blue, unsigned char* Buffer)
+void DrawLine(int X1, int Y1, int X2, int Y2, Color color, unsigned char* Buffer)
 {
 	float yIncrease = (Y2 - (float)Y1)/(X2 - (float)X1);
-	float currentY = Y1;
-	int* BufferWalker = (int*)Buffer;
-
-	for (int i = X1; i < X2; i++)
+	if (yIncrease < 1)
 	{
-		int offset1 = Offset(BufferWidth, i, floor(currentY));
-		int offset2 = Offset(BufferWidth, i, floor(currentY + 1));
-		float frac1 = 1 - (currentY - floor(currentY));
-		float frac2 = 1 - frac1;
+		float currentY = Y1;
+		int* BufferWalker = (int*)Buffer;
 
-		int currentColor1 = BufferWalker[offset1];
-		int currentColor2 = BufferWalker[offset2];
+		for (int i = X1; i < X2; i++)
+		{
+			int offset1;
+			int offset2; 
+			float frac1;
+			float frac2;
 
-		int red1 = (Red * frac1) + ((currentColor1 >> 16) * (1 - frac1));
-		int red2 = (Red * frac2) + ((currentColor2 >> 16) * (1 - frac2));
-		int green1 = (Green * frac1) + ((currentColor1 & 0x0000ff00 >> 8) * (1 - frac1));
-		int green2 = (Green * frac2) + ((currentColor2 & 0x0000ff00 >> 8) * (1 - frac2));
-		int blue1 = (Blue * frac1) + ((currentColor1 & 0x000000ff) * (1 - frac1));
-		int blue2 = (Blue * frac2) + ((currentColor2 & 0x000000ff) * (1 - frac2));
+			offset1 = Offset(BufferWidth, i, floor(currentY));
+			offset2 = Offset(BufferWidth, i, floor(currentY + 1));
 
-		unsigned int Color1 = ((red1 << 16) | (green1 << 8) | blue1);
-		unsigned int Color2 = ((red2 << 16) | (green2 << 8) | blue2);
+			frac1 = 1 - (currentY - floor(currentY));
+			frac2 = 1 - frac1;
 
-		BufferWalker[offset1] = Color1;
-		BufferWalker[offset2] = Color2;
-		currentY += yIncrease;
+			Color currentColor1 = { BufferWalker[offset1] };
+			Color currentColor2 = { BufferWalker[offset2] };
+
+			Color Color1 = MixColors(color, currentColor1, frac1);
+			Color Color2 = MixColors(color, currentColor2, frac2);
+
+			BufferWalker[offset1] = Color1.argb;
+			BufferWalker[offset2] = Color2.argb;
+			currentY += yIncrease;
+		}
+	}
+	else
+	{
+		float xIncrease = (X2 - (float)X1)/(Y2 - (float)Y1);
+		float currentX = X1;
+		int* BufferWalker = (int*)Buffer;
+
+		for (int i = Y1; i < Y2; i++)
+		{
+			int offset1;
+			int offset2; 
+			float frac1;
+			float frac2;
+
+			offset1 = Offset(BufferWidth, floor(currentX), i);
+			offset2 = Offset(BufferWidth, floor(currentX + 1), i);
+
+			frac1 = 1 - (currentX - floor(currentX));
+			frac2 = 1 - frac1;
+
+			Color currentColor1 = { BufferWalker[offset1] };
+			Color currentColor2 = { BufferWalker[offset2] };
+
+			Color Color1 = MixColors(color, currentColor1, frac1);
+			Color Color2 = MixColors(color, currentColor2, frac2);
+
+			BufferWalker[offset1] = Color1.argb;
+			BufferWalker[offset2] = Color2.argb;
+			currentX += xIncrease;
+		}
 	}
 }
 
@@ -194,7 +256,34 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			}
 		}
 
-		DrawLine(100, 100, 800, 500, 255, 255, 255, BackBuffer);
+		Color color = {0};
+		color.red = 255;
+		color.green = 255;
+		color.blue = 255;
+
+		DrawLine(100, 100, 200, 200, color, BackBuffer);
+		DrawLine(100, 100, 200, 180, color, BackBuffer);
+		DrawLine(100, 100, 200, 160, color, BackBuffer);
+		DrawLine(100, 100, 200, 140, color, BackBuffer);
+		DrawLine(100, 100, 200, 120, color, BackBuffer);
+		DrawLine(100, 100, 200, 100, color, BackBuffer);
+		DrawLine(100, 100, 180, 200, color, BackBuffer);
+		DrawLine(100, 100, 160, 200, color, BackBuffer);
+		DrawLine(100, 100, 140, 200, color, BackBuffer);
+		DrawLine(100, 100, 120, 200, color, BackBuffer);
+		DrawLine(100, 100, 100, 200, color, BackBuffer);
+
+		DrawLine(100, 100, 0, 0, color, BackBuffer);
+		DrawLine(100, 100, 0, 20, color, BackBuffer);
+		DrawLine(100, 100, 0, 40, color, BackBuffer);
+		DrawLine(100, 100, 0, 60, color, BackBuffer);
+		DrawLine(100, 100, 0, 80, color, BackBuffer);
+		DrawLine(100, 100, 0, 100, color, BackBuffer);
+		DrawLine(100, 100, 20, 0, color, BackBuffer);
+		DrawLine(100, 100, 40, 0, color, BackBuffer);
+		DrawLine(100, 100, 60, 0, color, BackBuffer);
+		DrawLine(100, 100, 80, 0, color, BackBuffer);
+		DrawLine(100, 100, 100, 0, color, BackBuffer);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,
