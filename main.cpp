@@ -7,13 +7,13 @@ int BufferHeight = 900;
 int BytesPerPixel = 4;
 unsigned char* BackBuffer;
 
-typedef struct dibinfo_s
+struct dibinfo
 {
 	BITMAPINFOHEADER bmiHeader;
 	RGBQUAD          acolors[256];
-} dibinfo_t;
+};
 
-typedef union Color
+union Color
 {
 	int argb;
 	struct
@@ -23,9 +23,15 @@ typedef union Color
 		unsigned char blue;
 		unsigned char alpha;
 	};
-} Color;
+};
 
-dibinfo_t BitMapInfo = { 0 };
+struct Vec2
+{
+	int X;
+	int Y;
+};
+
+dibinfo BitMapInfo = { 0 };
 
 inline int Offset(int Width, int X, int Y)
 {
@@ -45,9 +51,9 @@ inline Color MixColors(Color color1, Color color2, float color1frac)
 
 inline void Swap(int* value1, int* value2)
 {
-	int* temp = value1;
-	value1 = value2;
-	value2 = temp;
+	int temp = *value1;
+	*value1 = *value2;
+	*value2 = temp;
 }
 
 void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned char Green, unsigned char Blue, unsigned char* Buffer)
@@ -89,9 +95,17 @@ void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned c
 
 void DrawLine(int X1, int Y1, int X2, int Y2, Color color, unsigned char* Buffer)
 {
+	
 	float yIncrease = (Y2 - (float)Y1)/(X2 - (float)X1);
-	if (yIncrease < 1)
+
+	if (yIncrease < 1 && yIncrease > -1)
 	{
+		if (X2 < X1)
+		{
+			Swap(&Y2, &Y1);
+			Swap(&X2, &X1);
+		}
+
 		float currentY = Y1;
 		int* BufferWalker = (int*)Buffer;
 
@@ -121,6 +135,12 @@ void DrawLine(int X1, int Y1, int X2, int Y2, Color color, unsigned char* Buffer
 	}
 	else
 	{
+		if (Y2 < Y1)
+		{
+			Swap(&X2, &X1);
+			Swap(&Y2, &Y1);
+		}
+
 		float xIncrease = (X2 - (float)X1)/(Y2 - (float)Y1);
 		float currentX = X1;
 		int* BufferWalker = (int*)Buffer;
@@ -148,6 +168,14 @@ void DrawLine(int X1, int Y1, int X2, int Y2, Color color, unsigned char* Buffer
 			BufferWalker[offset2] = Color2.argb;
 			currentX += xIncrease;
 		}
+	}
+}
+
+void DrawPolygon(Vec2* polygon, int vbo_size, Color color, unsigned char* Buffer )
+{
+	for (int i = 0; i < vbo_size; i++)
+	{
+		DrawLine(polygon[i].X, polygon[i].Y, polygon[(i + 1) % vbo_size].X, polygon[(i + 1) % vbo_size].Y, color, Buffer);
 	}
 }
 
@@ -261,29 +289,16 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		color.green = 255;
 		color.blue = 255;
 
-		DrawLine(100, 100, 200, 200, color, BackBuffer);
-		DrawLine(100, 100, 200, 180, color, BackBuffer);
-		DrawLine(100, 100, 200, 160, color, BackBuffer);
-		DrawLine(100, 100, 200, 140, color, BackBuffer);
-		DrawLine(100, 100, 200, 120, color, BackBuffer);
-		DrawLine(100, 100, 200, 100, color, BackBuffer);
-		DrawLine(100, 100, 180, 200, color, BackBuffer);
-		DrawLine(100, 100, 160, 200, color, BackBuffer);
-		DrawLine(100, 100, 140, 200, color, BackBuffer);
-		DrawLine(100, 100, 120, 200, color, BackBuffer);
-		DrawLine(100, 100, 100, 200, color, BackBuffer);
+		Vec2 polygon[] = {
+			{100, 100},
+			{100, 200},
+			{200, 200},
+			{200, 100}
+		};
 
-		DrawLine(100, 100, 0, 0, color, BackBuffer);
-		DrawLine(100, 100, 0, 20, color, BackBuffer);
-		DrawLine(100, 100, 0, 40, color, BackBuffer);
-		DrawLine(100, 100, 0, 60, color, BackBuffer);
-		DrawLine(100, 100, 0, 80, color, BackBuffer);
-		DrawLine(100, 100, 0, 100, color, BackBuffer);
-		DrawLine(100, 100, 20, 0, color, BackBuffer);
-		DrawLine(100, 100, 40, 0, color, BackBuffer);
-		DrawLine(100, 100, 60, 0, color, BackBuffer);
-		DrawLine(100, 100, 80, 0, color, BackBuffer);
-		DrawLine(100, 100, 100, 0, color, BackBuffer);
+		int size = sizeof(polygon) / sizeof(*polygon); 
+
+		DrawPolygon(polygon, size, color, BackBuffer);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,
