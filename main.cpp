@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <math.h>
 
+#define PI 3.14159265358979323846
+
 int Running = 1;
 int BufferWidth = 1600;
 int BufferHeight = 900;
@@ -27,9 +29,21 @@ union Color
 
 struct Vec2
 {
-	int X;
-	int Y;
+	float X;
+	float Y;
 };
+
+inline Vec2 operator+(const Vec2& lhs, const Vec2& rhs)
+{
+	Vec2 result = { lhs.X + rhs.X, lhs.Y + rhs.Y };
+	return result;
+}
+
+inline Vec2 operator-(const Vec2& lhs, const Vec2& rhs)
+{
+	Vec2 result = { lhs.X - rhs.X, lhs.Y - rhs.Y };
+	return result;
+}
 
 dibinfo BitMapInfo = { 0 };
 
@@ -49,9 +63,9 @@ inline Color MixColors(Color color1, Color color2, float color1frac)
 	return newColor;
 }
 
-inline void Swap(int* value1, int* value2)
+inline void Swap(float* value1, float* value2)
 {
-	int temp = *value1;
+	float temp = *value1;
 	*value1 = *value2;
 	*value2 = temp;
 }
@@ -93,9 +107,9 @@ void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned c
 	}
 }
 
-void DrawLine(int X1, int Y1, int X2, int Y2, Color color, unsigned char* Buffer)
+void DrawLine(float X1, float Y1, float X2, float Y2, Color color, unsigned char* Buffer)
 {
-	
+
 	float yIncrease = (Y2 - (float)Y1)/(X2 - (float)X1);
 
 	if (yIncrease < 1 && yIncrease > -1)
@@ -109,10 +123,10 @@ void DrawLine(int X1, int Y1, int X2, int Y2, Color color, unsigned char* Buffer
 		float currentY = Y1;
 		int* BufferWalker = (int*)Buffer;
 
-		for (int i = X1; i < X2; i++)
+		for (float i = X1; i < X2; i++)
 		{
 			int offset1;
-			int offset2; 
+			int offset2;
 			float frac1;
 			float frac2;
 
@@ -145,10 +159,10 @@ void DrawLine(int X1, int Y1, int X2, int Y2, Color color, unsigned char* Buffer
 		float currentX = X1;
 		int* BufferWalker = (int*)Buffer;
 
-		for (int i = Y1; i < Y2; i++)
+		for (float i = Y1; i < Y2; i++)
 		{
 			int offset1;
-			int offset2; 
+			int offset2;
 			float frac1;
 			float frac2;
 
@@ -176,6 +190,54 @@ void DrawPolygon(Vec2* polygon, int vbo_size, Color color, unsigned char* Buffer
 	for (int i = 0; i < vbo_size; i++)
 	{
 		DrawLine(polygon[i].X, polygon[i].Y, polygon[(i + 1) % vbo_size].X, polygon[(i + 1) % vbo_size].Y, color, Buffer);
+	}
+}
+
+void RotatePolygon(Vec2* polygon, Vec2* rotatedPolygon, int vbo_size, Vec2 center, float degrees)
+{
+	float radians = degrees * (PI/180);
+
+	for (int i = 0; i < vbo_size; i++)
+	{
+		Vec2 vec = polygon[i];
+		vec = vec - center;
+
+		Vec2 rotated = { 0 };
+		rotated.X = vec.X * cos(radians) - vec.Y * sin(radians);
+		rotated.Y = vec.Y * cos(radians) + vec.X * sin(radians);
+
+		vec = rotated + center;
+		rotatedPolygon[i] = vec;
+	}
+}
+
+void ScalePolygon(Vec2* polygon, Vec2* scaledPolygon, int vbo_size, Vec2 center, float scaleX, float scaleY)
+{
+	for (int i = 0; i < vbo_size; i++)
+	{
+		Vec2 vec = polygon[i];
+		vec = vec - center;
+
+		Vec2 scaled = { 0 };
+		scaled.X = vec.X * scaleX;
+		scaled.Y = vec.Y * scaleY;
+
+		vec = scaled + center;
+		scaledPolygon[i] = vec;
+	}
+}
+
+void TranslatePolygon(Vec2* polygon, Vec2* translatedPolygon, int vbo_size, float translateX, float translateY)
+{
+	for (int i = 0; i < vbo_size; i++)
+	{
+		Vec2 vec = polygon[i];
+
+		Vec2 translated = { 0 };
+		translated.X = vec.X + translateX;
+		translated.Y = vec.Y + translateY;
+
+		translatedPolygon[i] = translated;
 	}
 }
 
@@ -214,7 +276,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	DWORD dwExStyle = 0;
 	DWORD dwStyle = WS_OVERLAPPEDWINDOW;
 
-	BOOL Fullscreen = TRUE;
+	BOOL Fullscreen = FALSE;
 
 	if (Fullscreen)
 	{
@@ -290,15 +352,54 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		color.blue = 255;
 
 		Vec2 polygon[] = {
-			{100, 100},
-			{100, 200},
-			{200, 200},
-			{200, 100}
+			{400, 400},
+			{400, 600},
+			{600, 600},
+			{600, 400},
 		};
 
-		int size = sizeof(polygon) / sizeof(*polygon); 
+		int size = sizeof(polygon) / sizeof(*polygon);
 
-		DrawPolygon(polygon, size, color, BackBuffer);
+		Vec2* rotatedPolygon = (Vec2*)malloc(size * sizeof(Vec2));
+		Vec2* scaledPolygon = (Vec2*)malloc(size * sizeof(Vec2));
+		Vec2* translatedPolygon = (Vec2*)malloc(size * sizeof(Vec2));
+		Vec2 center = {500, 500};
+		static float degrees = 0;
+		degrees += 0.05;
+		static float scale = 0;
+		static float scaleIncrease = 0.001;
+		scale += scaleIncrease;
+
+		if (scale > 2 || scale < 0)
+		{
+			scaleIncrease = -scaleIncrease;
+		}
+
+		static float translateX = 0;
+		static float translateY = 0;
+		static float translateIncreaseX = 0.5;
+		static float translateIncreaseY = 1;
+		translateX += translateIncreaseX;
+		translateY += translateIncreaseY;
+
+		if (translateX > 300 || translateX < 0)
+		{
+			translateIncreaseX = -translateIncreaseX;
+		}
+
+		if (translateY > 100 || translateY < 0)
+		{
+			translateIncreaseY = -translateIncreaseY;
+		}
+
+		RotatePolygon(polygon, rotatedPolygon, size, center, degrees);
+		ScalePolygon(rotatedPolygon, scaledPolygon, size, center, scale, scale);
+		TranslatePolygon(scaledPolygon, translatedPolygon, size, translateX, translateY);
+		DrawPolygon(translatedPolygon, size, color, BackBuffer);
+
+		free(rotatedPolygon);
+		free(scaledPolygon);
+		free(translatedPolygon);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,
