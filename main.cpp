@@ -40,6 +40,12 @@ struct Vec3
 	float Z;
 };
 
+struct Edge
+{
+	int edge1;
+	int edge2;
+};
+
 inline Vec2 operator+(const Vec2& lhs, const Vec2& rhs)
 {
 	Vec2 result = { lhs.X + rhs.X, lhs.Y + rhs.Y };
@@ -215,28 +221,28 @@ void DrawLine(float X1, float Y1, float X2, float Y2, Color color, unsigned char
 	}
 }
 
-void DrawPolygon(Vec2* polygon, int vbo_size, Color color, unsigned char* Buffer)
+void DrawPolygon(Vec2* polygon, int vertexCount, Color color, unsigned char* Buffer)
 {
-	for (int i = 0; i < vbo_size; i++)
+	for (int i = 0; i < vertexCount; i++)
 	{
-		DrawLine(polygon[i].X, polygon[i].Y, polygon[(i + 1) % vbo_size].X, polygon[(i + 1) % vbo_size].Y, color, Buffer);
+		DrawLine(polygon[i].X, polygon[i].Y, polygon[(i + 1) % vertexCount].X, polygon[(i + 1) % vertexCount].Y, color, Buffer);
 	}
 }
 
-void DrawPolygon(Vec3* polygon, int vbo_size, Color color, unsigned char* Buffer)
+void DrawPolygon(Vec3* polygon, Edge* edges, int edgeCount, Color color, unsigned char* Buffer)
 {
 	//TODO(Simon): Projection!
-	for (int i = 0; i < vbo_size; i++)
+	for (int i = 0; i < edgeCount; i++)
 	{
-		DrawLine(polygon[i].X, polygon[i].Y, polygon[(i + 1) % vbo_size].X, polygon[(i + 1) % vbo_size].Y, color, Buffer);
+		DrawLine(polygon[edges[i].edge1].X, polygon[edges[i].edge1].Y, polygon[edges[i].edge2].X, polygon[edges[i].edge2].Y, color, Buffer);
 	}
 }
 
-void RotatePolygon(Vec2* polygon, Vec2* rotatedPolygon, int vbo_size, Vec2 center, float degrees)
+void RotatePolygon(Vec2* polygon, Vec2* rotatedPolygon, int vertexCount, Vec2 center, float degrees)
 {
 	float radians = degrees * (PI/180);
 
-	for (int i = 0; i < vbo_size; i++)
+	for (int i = 0; i < vertexCount; i++)
 	{
 		Vec2 vec = polygon[i];
 		vec = vec - center;
@@ -250,13 +256,13 @@ void RotatePolygon(Vec2* polygon, Vec2* rotatedPolygon, int vbo_size, Vec2 cente
 	}
 }
 
-void RotatePolygon(Vec3* polygon, Vec3* rotatedPolygon, int vbo_size, Vec3 center, Vec3 degrees)
+void RotatePolygon(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, Vec3 degrees)
 {
 	Vec3 radians = degrees * (PI/180);
 
-	memcpy(rotatedPolygon, polygon, vbo_size * sizeof(Vec3));
+	memcpy(rotatedPolygon, polygon, vertexCount * sizeof(Vec3));
 
-	for (int i = 0; i < vbo_size; i++)
+	for (int i = 0; i < vertexCount; i++)
 	{
 		Vec3 vec = rotatedPolygon[i];
 		vec = vec - center;
@@ -282,9 +288,9 @@ void RotatePolygon(Vec3* polygon, Vec3* rotatedPolygon, int vbo_size, Vec3 cente
 	}
 }
 
-void ScalePolygon(Vec2* polygon, Vec2* scaledPolygon, int vbo_size, Vec2 center, float scaleX, float scaleY)
+void ScalePolygon(Vec2* polygon, Vec2* scaledPolygon, int vertexCount, Vec2 center, float scaleX, float scaleY)
 {
-	for (int i = 0; i < vbo_size; i++)
+	for (int i = 0; i < vertexCount; i++)
 	{
 		Vec2 vec = polygon[i];
 		vec = vec - center;
@@ -298,9 +304,9 @@ void ScalePolygon(Vec2* polygon, Vec2* scaledPolygon, int vbo_size, Vec2 center,
 	}
 }
 
-void TranslatePolygon(Vec2* polygon, Vec2* translatedPolygon, int vbo_size, float translateX, float translateY)
+void TranslatePolygon(Vec2* polygon, Vec2* translatedPolygon, int vertexCount, float translateX, float translateY)
 {
-	for (int i = 0; i < vbo_size; i++)
+	for (int i = 0; i < vertexCount; i++)
 	{
 		Vec2 vec = polygon[i];
 
@@ -427,29 +433,43 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{400, 600, 100},
 			{600, 600, 100},
 			{600, 400, 100},
-			{400, 400, 200},
-			{400, 600, 200},
-			{600, 600, 200},
-			{600, 400, 200},
+			{400, 400, 300},
+			{400, 600, 300},
+			{600, 600, 300},
+			{600, 400, 300},
 		};
 
-		//TODO(Simon): Fix how edges are connected. Add e.g. an array of edge connections.
+		Edge edges[] = {
+			{0, 1},
+			{1, 2},
+			{2, 3},
+			{3, 0},
+			{4, 5},
+			{5, 6},
+			{6, 7},
+			{7, 4},
+			{0, 4},
+			{1, 5},
+			{2, 6},
+			{3, 7},
+		};
 
-		int size = sizeof(polygon) / sizeof(*polygon);
 
-		Vec3* rotatedPolygon = (Vec3*)malloc(size * sizeof(Vec3));
-		Vec3* scaledPolygon = (Vec3*)malloc(size * sizeof(Vec3));
-		Vec3* translatedPolygon = (Vec3*)malloc(size * sizeof(Vec3));
+		int vertexCount = sizeof(polygon) / sizeof(*polygon);
+		int edgeCount = sizeof(edges) / sizeof(*edges);
+
+		Vec3* rotatedPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
+		Vec3* scaledPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
+		Vec3* translatedPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
 
 		Vec3 center = { 500, 500, 10 };
 		static Vec3 degrees = { 0, 0, 0 };
-		degrees.X += 0.025;
+		degrees.X += 0.05;
 		degrees.Y += 0.05;
-		degrees.Z += 0.075;
 
-		RotatePolygon(polygon, rotatedPolygon, size, center, degrees);
+		RotatePolygon(polygon, rotatedPolygon, vertexCount, center, degrees);
 
-		DrawPolygon(rotatedPolygon, size, color, BackBuffer);
+		DrawPolygon(rotatedPolygon, edges, edgeCount, color, BackBuffer);
 
 		free(rotatedPolygon);
 		free(scaledPolygon);
