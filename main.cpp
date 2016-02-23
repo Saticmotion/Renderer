@@ -33,6 +33,13 @@ struct Vec2
 	float Y;
 };
 
+struct Vec3
+{
+	float X;
+	float Y;
+	float Z;
+};
+
 inline Vec2 operator+(const Vec2& lhs, const Vec2& rhs)
 {
 	Vec2 result = { lhs.X + rhs.X, lhs.Y + rhs.Y };
@@ -43,6 +50,29 @@ inline Vec2 operator-(const Vec2& lhs, const Vec2& rhs)
 {
 	Vec2 result = { lhs.X - rhs.X, lhs.Y - rhs.Y };
 	return result;
+}
+
+inline Vec3 operator+(const Vec3& lhs, const Vec3& rhs)
+{
+	Vec3 result = { lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z};
+	return result;
+}
+
+inline Vec3 operator-(const Vec3& lhs, const Vec3& rhs)
+{
+	Vec3 result = { lhs.X - rhs.X, lhs.Y - rhs.Y, lhs.Z - rhs.Z};
+	return result;
+}
+
+inline Vec3 operator*(const Vec3& lhs, const float& rhs)
+{
+	Vec3 result = { lhs.X * rhs, lhs.Y * rhs, lhs.Z * rhs };
+	return result;
+}
+
+inline Vec3 operator*(const float& lhs, const Vec3& rhs)
+{
+	return rhs * lhs;
 }
 
 dibinfo BitMapInfo = { 0 };
@@ -185,8 +215,17 @@ void DrawLine(float X1, float Y1, float X2, float Y2, Color color, unsigned char
 	}
 }
 
-void DrawPolygon(Vec2* polygon, int vbo_size, Color color, unsigned char* Buffer )
+void DrawPolygon(Vec2* polygon, int vbo_size, Color color, unsigned char* Buffer)
 {
+	for (int i = 0; i < vbo_size; i++)
+	{
+		DrawLine(polygon[i].X, polygon[i].Y, polygon[(i + 1) % vbo_size].X, polygon[(i + 1) % vbo_size].Y, color, Buffer);
+	}
+}
+
+void DrawPolygon(Vec3* polygon, int vbo_size, Color color, unsigned char* Buffer)
+{
+	//TODO(Simon): Projection!
 	for (int i = 0; i < vbo_size; i++)
 	{
 		DrawLine(polygon[i].X, polygon[i].Y, polygon[(i + 1) % vbo_size].X, polygon[(i + 1) % vbo_size].Y, color, Buffer);
@@ -207,6 +246,38 @@ void RotatePolygon(Vec2* polygon, Vec2* rotatedPolygon, int vbo_size, Vec2 cente
 		rotated.Y = vec.Y * cos(radians) + vec.X * sin(radians);
 
 		vec = rotated + center;
+		rotatedPolygon[i] = vec;
+	}
+}
+
+void RotatePolygon(Vec3* polygon, Vec3* rotatedPolygon, int vbo_size, Vec3 center, Vec3 degrees)
+{
+	Vec3 radians = degrees * (PI/180);
+
+	memcpy(rotatedPolygon, polygon, vbo_size * sizeof(Vec3));
+
+	for (int i = 0; i < vbo_size; i++)
+	{
+		Vec3 vec = rotatedPolygon[i];
+		vec = vec - center;
+
+		if (radians.X != 0)
+		{
+			vec.Y = vec.Y * (float)cos(radians.X) - vec.Z * (float)sin(radians.X);
+			vec.Z = vec.Z * (float)cos(radians.X) + vec.Y * (float)sin(radians.X);
+		}
+		if (radians.Y != 0)
+		{
+			vec.X = vec.X * (float)cos(radians.Y) - vec.Z * (float)sin(radians.Y);
+			vec.Z = vec.Z * (float)cos(radians.Y) + vec.X * (float)sin(radians.Y);
+		}
+		if (radians.Z != 0)
+		{
+			vec.X = vec.X * (float)cos(radians.Z) - vec.Y * (float)sin(radians.Z);
+			vec.Y = vec.Y * (float)cos(radians.Z) + vec.X * (float)sin(radians.Z);
+		}
+
+		vec = vec + center;
 		rotatedPolygon[i] = vec;
 	}
 }
@@ -351,51 +422,34 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		color.green = 255;
 		color.blue = 255;
 
-		Vec2 polygon[] = {
-			{400, 400},
-			{400, 600},
-			{600, 600},
-			{600, 400},
+		Vec3 polygon[] = {
+			{400, 400, 100},
+			{400, 600, 100},
+			{600, 600, 100},
+			{600, 400, 100},
+			{400, 400, 200},
+			{400, 600, 200},
+			{600, 600, 200},
+			{600, 400, 200},
 		};
+
+		//TODO(Simon): Fix how edges are connected. Add e.g. an array of edge connections.
 
 		int size = sizeof(polygon) / sizeof(*polygon);
 
-		Vec2* rotatedPolygon = (Vec2*)malloc(size * sizeof(Vec2));
-		Vec2* scaledPolygon = (Vec2*)malloc(size * sizeof(Vec2));
-		Vec2* translatedPolygon = (Vec2*)malloc(size * sizeof(Vec2));
-		Vec2 center = {500, 500};
-		static float degrees = 0;
-		degrees += 0.05;
-		static float scale = 0;
-		static float scaleIncrease = 0.001;
-		scale += scaleIncrease;
+		Vec3* rotatedPolygon = (Vec3*)malloc(size * sizeof(Vec3));
+		Vec3* scaledPolygon = (Vec3*)malloc(size * sizeof(Vec3));
+		Vec3* translatedPolygon = (Vec3*)malloc(size * sizeof(Vec3));
 
-		if (scale > 2 || scale < 0)
-		{
-			scaleIncrease = -scaleIncrease;
-		}
-
-		static float translateX = 0;
-		static float translateY = 0;
-		static float translateIncreaseX = 0.5;
-		static float translateIncreaseY = 1;
-		translateX += translateIncreaseX;
-		translateY += translateIncreaseY;
-
-		if (translateX > 300 || translateX < 0)
-		{
-			translateIncreaseX = -translateIncreaseX;
-		}
-
-		if (translateY > 100 || translateY < 0)
-		{
-			translateIncreaseY = -translateIncreaseY;
-		}
+		Vec3 center = { 500, 500, 10 };
+		static Vec3 degrees = { 0, 0, 0 };
+		degrees.X += 0.025;
+		degrees.Y += 0.05;
+		degrees.Z += 0.075;
 
 		RotatePolygon(polygon, rotatedPolygon, size, center, degrees);
-		ScalePolygon(rotatedPolygon, scaledPolygon, size, center, scale, scale);
-		TranslatePolygon(scaledPolygon, translatedPolygon, size, translateX, translateY);
-		DrawPolygon(translatedPolygon, size, color, BackBuffer);
+
+		DrawPolygon(rotatedPolygon, size, color, BackBuffer);
 
 		free(rotatedPolygon);
 		free(scaledPolygon);
