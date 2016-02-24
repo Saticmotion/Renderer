@@ -274,8 +274,8 @@ void RotatePolygon(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 ce
 		}
 		if (radians.Y != 0)
 		{
-			vec.X = vec.X * (float)cos(radians.Y) - vec.Z * (float)sin(radians.Y);
-			vec.Z = vec.Z * (float)cos(radians.Y) + vec.X * (float)sin(radians.Y);
+			vec.Z = vec.Z * (float)cos(radians.Y) - vec.X * (float)sin(radians.Y);
+			vec.X = vec.X * (float)cos(radians.Y) + vec.Z * (float)sin(radians.Y);
 		}
 		if (radians.Z != 0)
 		{
@@ -439,6 +439,13 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{600, 400, 300},
 		};
 
+		Vec2 polygon2[] {
+			{600, 600},
+			{600, 800},
+			{800, 800},
+			{800, 600},
+		};
+
 		Edge edges[] = {
 			{0, 1},
 			{1, 2},
@@ -462,12 +469,15 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		Vec3* scaledPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
 		Vec3* translatedPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
 
-		Vec3 center = { 500, 500, 10 };
+		Vec3 center = { 500, 500, 200 };
+		Vec3 center2 = { 500, 500 };
 		static Vec3 degrees = { 0, 0, 0 };
-		degrees.X += 0.05;
+		//degrees.X += 0.05;
 		degrees.Y += 0.05;
+		//degrees.Z += 0.05;
 
 		RotatePolygon(polygon, rotatedPolygon, vertexCount, center, degrees);
+		//RotatePolygon(polygon, polygon, vertexCount, center2, degrees.Z);
 
 		DrawPolygon(rotatedPolygon, edges, edgeCount, color, BackBuffer);
 
