@@ -256,9 +256,9 @@ void RotatePolygon(Vec2* polygon, Vec2* rotatedPolygon, int vertexCount, Vec2 ce
 	}
 }
 
-void RotatePolygon(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, Vec3 degrees)
+void RotatePolygonX(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, float degrees)
 {
-	Vec3 radians = degrees * (PI/180);
+	float radians = degrees * (PI/180);
 
 	memcpy(rotatedPolygon, polygon, vertexCount * sizeof(Vec3));
 
@@ -267,21 +267,46 @@ void RotatePolygon(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 ce
 		Vec3 vec = rotatedPolygon[i];
 		vec = vec - center;
 
-		if (radians.X != 0)
-		{
-			vec.Y = vec.Y * (float)cos(radians.X) - vec.Z * (float)sin(radians.X);
-			vec.Z = vec.Z * (float)cos(radians.X) + vec.Y * (float)sin(radians.X);
-		}
-		if (radians.Y != 0)
-		{
-			vec.Z = vec.Z * (float)cos(radians.Y) - vec.X * (float)sin(radians.Y);
-			vec.X = vec.X * (float)cos(radians.Y) + vec.Z * (float)sin(radians.Y);
-		}
-		if (radians.Z != 0)
-		{
-			vec.X = vec.X * (float)cos(radians.Z) - vec.Y * (float)sin(radians.Z);
-			vec.Y = vec.Y * (float)cos(radians.Z) + vec.X * (float)sin(radians.Z);
-		}
+		vec.Y = vec.Y * (float)cos(radians) - vec.Z * (float)sin(radians);
+		vec.Z = vec.Y * (float)sin(radians) + vec.Z * (float)cos(radians);
+
+		vec = vec + center;
+		rotatedPolygon[i] = vec;
+	}
+}
+
+void RotatePolygonY(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, float degrees)
+{
+	float radians = degrees * (PI/180);
+
+	memcpy(rotatedPolygon, polygon, vertexCount * sizeof(Vec3));
+
+	for (int i = 0; i < vertexCount; i++)
+	{
+		Vec3 vec = rotatedPolygon[i];
+		vec = vec - center;
+
+		vec.X = vec.X * (float)cos(radians) + vec.Z * (float)sin(radians);
+		vec.Z = -vec.X * (float)sin(radians) + vec.Z * (float)cos(radians);
+
+		vec = vec + center;
+		rotatedPolygon[i] = vec;
+	}
+}
+
+void RotatePolygonZ(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, float degrees)
+{
+	float radians = degrees * (PI/180);
+
+	memcpy(rotatedPolygon, polygon, vertexCount * sizeof(Vec3));
+
+	for (int i = 0; i < vertexCount; i++)
+	{
+		Vec3 vec = rotatedPolygon[i];
+		vec = vec - center;
+
+		vec.X = vec.X * (float)sin(radians) - vec.Y * (float)cos(radians);
+		vec.Y = vec.X * (float)cos(radians) + vec.Y * (float)sin(radians);
 
 		vec = vec + center;
 		rotatedPolygon[i] = vec;
@@ -353,28 +378,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	DWORD dwExStyle = 0;
 	DWORD dwStyle = WS_OVERLAPPEDWINDOW;
 
-	BOOL Fullscreen = FALSE;
-
-	if (Fullscreen)
-	{
-		DEVMODE dmScreenSettings = { 0 };
-		dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-		dmScreenSettings.dmPelsWidth = BufferWidth;
-		dmScreenSettings.dmPelsHeight = BufferHeight;
-		dmScreenSettings.dmBitsPerPel = 32;
-		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-
-		if (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL)
-		{
-			dwExStyle = WS_EX_APPWINDOW;
-			dwStyle = WS_POPUP;
-		}
-		else
-		{
-			Fullscreen = FALSE;
-		}
-	}
-
 	// create rectangle for window
 	RECT r = { 0 };
 	r.right = BufferWidth;
@@ -390,15 +393,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		NULL, NULL,
 		hInstance, 0);
 
-	if (Fullscreen)
-		SetWindowLong(MainWindow, GWL_STYLE, 0);
-
 	ShowWindow(MainWindow, nShowCmd);
 
 	// define our bitmap info
 	BitMapInfo.bmiHeader.biSize = sizeof(BitMapInfo.bmiHeader);
 	BitMapInfo.bmiHeader.biWidth = BufferWidth;
-	BitMapInfo.bmiHeader.biHeight = -BufferHeight;
+	BitMapInfo.bmiHeader.biHeight = BufferHeight;
 	BitMapInfo.bmiHeader.biPlanes = 1;
 	BitMapInfo.bmiHeader.biBitCount = 8 * BytesPerPixel;
 	BitMapInfo.bmiHeader.biCompression = BI_RGB;
@@ -429,14 +429,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		color.blue = 255;
 
 		Vec3 polygon[] = {
+			{200, 200, 100},
+			{200, 400, 100},
 			{400, 400, 100},
-			{400, 600, 100},
-			{600, 600, 100},
-			{600, 400, 100},
+			{400, 200, 100},
+			{200, 200, 300},
+			{200, 400, 300},
 			{400, 400, 300},
-			{400, 600, 300},
-			{600, 600, 300},
-			{600, 400, 300},
+			{400, 200, 300},
 		};
 
 		Vec2 polygon2[] {
@@ -469,15 +469,15 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		Vec3* scaledPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
 		Vec3* translatedPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
 
-		Vec3 center = { 500, 500, 200 };
-		Vec3 center2 = { 500, 500 };
+		Vec3 center = { 300, 300, 200 };
 		static Vec3 degrees = { 0, 0, 0 };
-		//degrees.X += 0.05;
-		degrees.Y += 0.05;
-		//degrees.Z += 0.05;
+		//degrees.X += 0.25;
+		//degrees.Y += 0.25;
+		degrees.Z += 0.25;
 
-		RotatePolygon(polygon, rotatedPolygon, vertexCount, center, degrees);
-		//RotatePolygon(polygon, polygon, vertexCount, center2, degrees.Z);
+		RotatePolygonX(polygon, rotatedPolygon, vertexCount, center, degrees.X);
+		RotatePolygonY(rotatedPolygon, rotatedPolygon, vertexCount, center, degrees.Y);
+		RotatePolygonZ(rotatedPolygon, rotatedPolygon, vertexCount, center, degrees.Z);
 
 		DrawPolygon(rotatedPolygon, edges, edgeCount, color, BackBuffer);
 
@@ -491,7 +491,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			0, 0, BufferWidth, BufferHeight,
 			BackBuffer, (BITMAPINFO*)&BitMapInfo,
 			DIB_RGB_COLORS, SRCCOPY);
-		DeleteDC(dc);
+		ReleaseDC(MainWindow, dc);
 	}
 
 	return EXIT_SUCCESS;
