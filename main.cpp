@@ -20,9 +20,9 @@ union Color
 	int argb;
 	struct
 	{
-		unsigned char red;
-		unsigned char green;
 		unsigned char blue;
+		unsigned char green;
+		unsigned char red;
 		unsigned char alpha;
 	};
 };
@@ -260,18 +260,17 @@ void RotatePolygonX(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 c
 {
 	float radians = degrees * (PI/180);
 
-	memcpy(rotatedPolygon, polygon, vertexCount * sizeof(Vec3));
-
 	for (int i = 0; i < vertexCount; i++)
 	{
-		Vec3 vec = rotatedPolygon[i];
+		Vec3 vec = polygon[i];
 		vec = vec - center;
+		Vec3 newVec = vec;
 
-		vec.Y = vec.Y * (float)cos(radians) - vec.Z * (float)sin(radians);
-		vec.Z = vec.Y * (float)sin(radians) + vec.Z * (float)cos(radians);
+		newVec.Y = vec.Y * (float)cos(radians) - vec.Z * (float)sin(radians);
+		newVec.Z = vec.Y * (float)sin(radians) + vec.Z * (float)cos(radians);
 
-		vec = vec + center;
-		rotatedPolygon[i] = vec;
+		newVec = newVec + center;
+		rotatedPolygon[i] = newVec;
 	}
 }
 
@@ -279,18 +278,17 @@ void RotatePolygonY(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 c
 {
 	float radians = degrees * (PI/180);
 
-	memcpy(rotatedPolygon, polygon, vertexCount * sizeof(Vec3));
-
 	for (int i = 0; i < vertexCount; i++)
 	{
-		Vec3 vec = rotatedPolygon[i];
+		Vec3 vec = polygon[i];
 		vec = vec - center;
+		Vec3 newVec = vec;
 
-		vec.X = vec.X * (float)cos(radians) + vec.Z * (float)sin(radians);
-		vec.Z = -vec.X * (float)sin(radians) + vec.Z * (float)cos(radians);
+		newVec.X = vec.X * (float)cos(radians) + vec.Z * (float)sin(radians);
+		newVec.Z = -vec.X * (float)sin(radians) + vec.Z * (float)cos(radians);
 
-		vec = vec + center;
-		rotatedPolygon[i] = vec;
+		newVec = newVec + center;
+		rotatedPolygon[i] = newVec;
 	}
 }
 
@@ -298,18 +296,17 @@ void RotatePolygonZ(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 c
 {
 	float radians = degrees * (PI/180);
 
-	memcpy(rotatedPolygon, polygon, vertexCount * sizeof(Vec3));
-
 	for (int i = 0; i < vertexCount; i++)
 	{
-		Vec3 vec = rotatedPolygon[i];
+		Vec3 vec = polygon[i];
 		vec = vec - center;
+		Vec3 newVec = vec;
 
-		vec.X = vec.X * (float)sin(radians) - vec.Y * (float)cos(radians);
-		vec.Y = vec.X * (float)cos(radians) + vec.Y * (float)sin(radians);
+		newVec.X = vec.X * (float)cos(radians) - vec.Y * (float)sin(radians);
+		newVec.Y = vec.X * (float)sin(radians) + vec.Y * (float)cos(radians);
 
-		vec = vec + center;
-		rotatedPolygon[i] = vec;
+		newVec = newVec + center;
+		rotatedPolygon[i] = newVec;
 	}
 }
 
@@ -327,6 +324,23 @@ void ScalePolygon(Vec2* polygon, Vec2* scaledPolygon, int vertexCount, Vec2 cent
 		vec = scaled + center;
 		scaledPolygon[i] = vec;
 	}
+}
+
+void ScalePolygon(Vec3* polygon, Vec3* scaledPolygon, int vertexCount, Vec3 center, float scaleX, float scaleY, float scaleZ)
+{
+	for (int i = 0; i < vertexCount; i++)
+	{
+		Vec3 vec = polygon[i];
+		vec = vec - center;
+
+		Vec3 scaled = { 0 };
+		scaled.X = vec.X * scaleX;
+		scaled.Y = vec.Y * scaleY;
+		scaled.Z = vec.Z * scaleY;
+
+		vec = scaled + center;
+		scaledPolygon[i] = vec;
+	}	
 }
 
 void TranslatePolygon(Vec2* polygon, Vec2* translatedPolygon, int vertexCount, float translateX, float translateY)
@@ -424,26 +438,19 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		}
 
 		Color color = {0};
-		color.red = 255;
-		color.green = 255;
+		color.red = 0;
+		color.green = 0;
 		color.blue = 255;
 
 		Vec3 polygon[] = {
-			{200, 200, 100},
-			{200, 400, 100},
-			{400, 400, 100},
-			{400, 200, 100},
-			{200, 200, 300},
-			{200, 400, 300},
-			{400, 400, 300},
-			{400, 200, 300},
-		};
-
-		Vec2 polygon2[] {
-			{600, 600},
-			{600, 800},
-			{800, 800},
-			{800, 600},
+			{450, 450, 100},
+			{450, 550, 100},
+			{550, 550, 100},
+			{550, 450, 100},
+			{450, 450, 300},
+			{450, 550, 300},
+			{550, 550, 300},
+			{550, 450, 300},
 		};
 
 		Edge edges[] = {
@@ -461,25 +468,52 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{3, 7},
 		};
 
-
 		int vertexCount = sizeof(polygon) / sizeof(*polygon);
 		int edgeCount = sizeof(edges) / sizeof(*edges);
 
-		Vec3* rotatedPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
-		Vec3* scaledPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
-		Vec3* translatedPolygon = (Vec3*)malloc(vertexCount * sizeof(Vec3));
+		Vec3* rotatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
+		Vec3* scaledPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
+		Vec3* translatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
 
-		Vec3 center = { 300, 300, 200 };
+		Vec3 center = { 500, 500, 200 };
 		static Vec3 degrees = { 0, 0, 0 };
-		//degrees.X += 0.25;
-		//degrees.Y += 0.25;
+		degrees.X += 0.25;
+		degrees.Y += 0.25;
 		degrees.Z += 0.25;
+
+		static float scale = 1;
+		static float scaleIncrease = 0.005;
+		scale += scaleIncrease;
+		if (scale > 2 || scale < 0.5f)
+		{
+			scaleIncrease = -scaleIncrease;
+		}
+
+		static int green = 0;
+		static int greenIncrease = 1;
+		green += greenIncrease;
+		if (green > 254 || green < 1)
+		{
+			greenIncrease = -greenIncrease;
+		}		
+		color.green = green;
+
+		static int red = 255;
+		static int redIncrease = -1;
+		red += redIncrease;
+		if (red > 254 || red < 1)
+		{
+			redIncrease = -redIncrease;
+		}		
+		color.red = red;
 
 		RotatePolygonX(polygon, rotatedPolygon, vertexCount, center, degrees.X);
 		RotatePolygonY(rotatedPolygon, rotatedPolygon, vertexCount, center, degrees.Y);
 		RotatePolygonZ(rotatedPolygon, rotatedPolygon, vertexCount, center, degrees.Z);
 
-		DrawPolygon(rotatedPolygon, edges, edgeCount, color, BackBuffer);
+		ScalePolygon(rotatedPolygon, scaledPolygon, vertexCount, center, scale,scale, scale);
+
+		DrawPolygon(scaledPolygon, edges, edgeCount, color, BackBuffer);
 
 		free(rotatedPolygon);
 		free(scaledPolygon);
