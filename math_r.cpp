@@ -5,11 +5,19 @@ struct Vec2
 	float Y;
 };
 
-struct Vec3
+union Vec3
 {
-	float X;
-	float Y;
-	float Z;
+	struct
+	{
+		Vec2 XY;
+		float Z;
+	};
+	struct
+	{
+		float X;
+		float Y;
+		float Z;
+	};
 };
 
 union Matrix2x2
