@@ -184,18 +184,24 @@ void DrawPolygon(Vec3* polygon, Edge* edges, int edgeCount, Color color, unsigne
 		Vec3 p1 = polygon[edges[i].edge1];
 		Vec3 p2 = polygon[edges[i].edge2];
 
-		float factor = 20;
+		float fov = 90 * (PI / 180);
+		Matrix4x4 projection = { 0 };
 
-		p1 = p1 - ScreenCenter;
-		p1.X = (p1.X * factor) / (p1.Z + factor);
-		p1.Y = (p1.Y * factor) / (p1.Z + factor);
-		p1 = p1 + ScreenCenter;
+		projection.a11 = 1.0f / (((float)BufferWidth / BufferHeight) * tan(fov / 2.0f));
+		projection.a22 = 1.0f / (tan(fov / 2.0f));
+		projection.a33 = 1;
+		projection.a43 = 1;
 
-		p2 = p2 - ScreenCenter;
-		p2.X = (p2.X * factor) / (p2.Z + factor);
-		p2.Y = (p2.Y * factor) / (p2.Z + factor);
-		p2 = p2 + ScreenCenter;
+		p1 = projection * p1;
+		p1 = p1 / p1.Z;
+		p1.X = ((p1.X + 1.0f) / 2.0f) * BufferWidth;
+		p1.Y = ((p1.Y + 1.0f) / 2.0f) * BufferHeight;
 
+		p2 = projection * p2;
+		p2 = p2 / p2.Z;
+		p2.X = ((p2.X + 1.0f) / 2.0f) * BufferWidth;
+		p2.Y = ((p2.Y + 1.0f) / 2.0f) * BufferHeight;
+		
 		DrawLine(p1.XY, p2.XY, color, Buffer);
 	}
 }
@@ -418,18 +424,18 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		color.green = 0;
 		color.blue = 255;
 
-		Vec3 center = { 800, 450, 20 };
+		Vec3 center = { 0, 0, 21 };
 
 		Vec3 polygon[] = {
-			{780, 430, 0},
-			{780, 470, 0},
-			{820, 470, 0},
-			{820, 430, 0},
+			{-1, -1, 20},
+			{-1, 1, 20},
+			{1, 1, 20},
+			{1, -1, 20},
 
-			{780, 430, 40},
-			{780, 470, 40},
-			{820, 470, 40},
-			{820, 430, 40},
+			{-1, -1, 22},
+			{-1, 1, 22},
+			{1, 1, 22},
+			{1, -1, 22},
 
 		};
 
@@ -454,18 +460,32 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		int edgeCount = sizeof(edges) / sizeof(*edges);
 
 		Vec3* rotatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
+		Vec3* scaledPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
+		Vec3* translatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
 
 		static Vec3 degrees = { 0, 0, 0 };
 		degrees.X -= 0.25;
 		degrees.Y += 0.25;
 		degrees.Z -= 0.25;
 
-		//RotatePolygonZ(polygon, rotatedPolygon, vertexCount, center, degrees.Z);
-		RotatePolygonY(polygon, rotatedPolygon, vertexCount, center, degrees.Y);
+		static Vec3 translation = { 0 };
+		static float translationIncrease = 0.01f;
+		translation.X += translationIncrease;
 
-		DrawPolygon(rotatedPolygon, edges, edgeCount, color, BackBuffer);
+		if (translation.X > 10 || translation.X < -10)
+		{
+			translationIncrease = -translationIncrease;
+		}
+
+		RotatePolygonZ(polygon, rotatedPolygon, vertexCount, center, degrees.Z);
+		ScalePolygon(rotatedPolygon, scaledPolygon, vertexCount, center, 3, 3, 3);
+		TranslatePolygon(scaledPolygon, translatedPolygon, vertexCount, translation);
+
+
+		DrawPolygon(translatedPolygon, edges, edgeCount, color, BackBuffer);
 
 		free(rotatedPolygon);
+		free(translatedPolygon);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,
