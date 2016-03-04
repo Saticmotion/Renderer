@@ -3,13 +3,14 @@
 #include "math_r.cpp"
 
 #define PI 3.14159265358979323846
+typedef unsigned char uchar;
 
 int Running = 1;
 int BufferWidth = 1600;
 int BufferHeight = 900;
 Vec3 ScreenCenter = {BufferWidth / 2.0f, BufferHeight / 2.0f, 0};
 int BytesPerPixel = 4;
-unsigned char* BackBuffer;
+uchar* BackBuffer;
 
 struct dibinfo
 {
@@ -22,10 +23,10 @@ union Color
 	int argb;
 	struct
 	{
-		unsigned char blue;
-		unsigned char green;
-		unsigned char red;
-		unsigned char alpha;
+		uchar blue;
+		uchar green;
+		uchar red;
+		uchar alpha;
 	};
 };
 
@@ -54,7 +55,19 @@ inline void Swap(float* value1, float* value2)
 	*value2 = temp;
 }
 
-void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned char Green, unsigned char Blue, unsigned char* Buffer)
+void ClearScreen(uchar* backBuffer, int bufferWidth, int bufferHeight, Color color)
+{
+	int *MemoryWalker = (int*)backBuffer;
+	for (int Height = 0; Height < bufferHeight; Height++)
+	{
+		for (int Width = 0; Width < bufferWidth; Width++)
+		{
+			*MemoryWalker++ = color.argb;
+		}
+	}
+}
+
+void DrawRect(int X, int Y, int Width, int Height, uchar Red, uchar Green, uchar Blue, uchar* Buffer)
 {
 	if (X < 0)
 		X = 0;
@@ -91,7 +104,7 @@ void DrawRect(int X, int Y, int Width, int Height, unsigned char Red, unsigned c
 	}
 }
 
-void DrawLine(Vec2 p1, Vec2 p2, Color color, unsigned char* Buffer)
+void DrawLine(Vec2 p1, Vec2 p2, Color color, uchar* Buffer)
 {
 
 	float yIncrease = (p2.Y - (float)p1.Y)/(p2.X - (float)p1.X);
@@ -169,7 +182,7 @@ void DrawLine(Vec2 p1, Vec2 p2, Color color, unsigned char* Buffer)
 	}
 }
 
-void DrawPolygon(Vec2* polygon, int vertexCount, Color color, unsigned char* Buffer)
+void DrawPolygon(Vec2* polygon, int vertexCount, Color color, uchar* Buffer)
 {
 	for (int i = 0; i < vertexCount; i++)
 	{
@@ -177,7 +190,7 @@ void DrawPolygon(Vec2* polygon, int vertexCount, Color color, unsigned char* Buf
 	}
 }
 
-void DrawPolygon(Vec3* polygon, Edge* edges, int edgeCount, Color color, unsigned char* Buffer)
+void DrawPolygon(Vec3* polygon, Edge* edges, int edgeCount, Color color, uchar* Buffer)
 {
 	for (int i = 0; i < edgeCount; i++)
 	{
@@ -201,7 +214,7 @@ void DrawPolygon(Vec3* polygon, Edge* edges, int edgeCount, Color color, unsigne
 		p2 = p2 / p2.Z;
 		p2.X = ((p2.X + 1.0f) / 2.0f) * BufferWidth;
 		p2.Y = ((p2.Y + 1.0f) / 2.0f) * BufferHeight;
-		
+
 		DrawLine(p1.XY, p2.XY, color, Buffer);
 	}
 }
@@ -399,7 +412,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	BitMapInfo.bmiHeader.biBitCount = 8 * BytesPerPixel;
 	BitMapInfo.bmiHeader.biCompression = BI_RGB;
 
-	BackBuffer = (unsigned char*)malloc(BufferWidth * BufferHeight * BytesPerPixel);
+	BackBuffer = (uchar*)malloc(BufferWidth * BufferHeight * BytesPerPixel);
 
 	MSG msg;
 	while (Running)
@@ -410,66 +423,128 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			DispatchMessage(&msg);
 		}
 
-		int *MemoryWalker = (int*)BackBuffer;
-		for (int Height = 0; Height < BufferHeight; Height++)
-		{
-			for (int Width = 0; Width < BufferWidth; Width++)
-			{
-				*MemoryWalker++ = 0x00000000;
-			}
-		}
+		Color bgColor = {0};
+		bgColor.red = 39;
+		bgColor.green = 40;
+		bgColor.blue = 34;
 
-		Color color = {0};
-		color.red = 0;
-		color.green = 0;
-		color.blue = 255;
+		Color lineColor = {0};
+		lineColor.red = 166;
+		lineColor.green = 226;
+		lineColor.blue = 46;
 
-		Vec3 center = { 0, 0, 21 };
+		ClearScreen(BackBuffer, BufferWidth, BufferHeight, bgColor);
+
+		Vec3 center = { 0, 0, 0 };
 
 		Vec3 polygon[] = {
-			{-1, -1, 20},
-			{-1, 1, 20},
-			{1, 1, 20},
-			{1, -1, 20},
-
-			{-1, -1, 22},
-			{-1, 1, 22},
-			{1, 1, 22},
-			{1, -1, 22},
-
+			{ 0.607f,  0.000f,  0.795f },
+			{ 0.188f,  0.577f,  0.795f },
+			{-0.491f,  0.357f,  0.795f },
+			{-0.491f, -0.357f,  0.795f },
+			{ 0.188f, -0.577f,  0.795f },
+			{ 0.982f,  0.000f,  0.188f },
+			{ 0.304f,  0.934f,  0.188f },
+			{-0.795f,  0.577f,  0.188f },
+			{-0.795f, -0.577f,  0.188f },
+			{ 0.304f, -0.934f,  0.188f },
+			{ 0.795f,  0.577f, -0.188f },
+			{-0.304f,  0.934f, -0.188f },
+			{-0.982f,  0.000f, -0.188f },
+			{-0.304f, -0.934f, -0.188f },
+			{ 0.795f, -0.577f, -0.188f },
+			{ 0.491f,  0.357f, -0.795f },
+			{-0.188f,  0.577f, -0.795f },
+			{-0.607f,  0.000f, -0.795f },
+			{-0.188f, -0.577f, -0.795f },
+			{ 0.491f, -0.357f, -0.795f },
 		};
 
 		Edge edges[] = {
-			{0, 1},
-			{1, 2},
-			{2, 3},
-			{3, 0},
+			{0,1},
+			{1,2},
+			{2,3},
+			{3,4},
+			{4,0},
 
-			{4, 5},
-			{5, 6},
-			{6, 7},
-			{7, 4},
+			{0,1},
+			{1,6},
+			{6,10},
+			{10,5},
+			{5,0},
 
-			{0, 4},
-			{1, 5},
-			{2, 6},
-			{3, 7},
+			{1,2},
+			{2,7},
+			{7,11},
+			{11,6},
+			{6,1},
+
+			{2,3},
+			{3,8},
+			{8,12},
+			{12,7},
+			{7,2},
+
+			{3,4},
+			{4,9},
+			{9,13},
+			{13,8},
+			{8,3},
+
+			{4,0},
+			{0,5},
+			{5,14},
+			{14,9},
+			{9,4},
+
+			{15,16},
+			{16,11},
+			{11,6},
+			{6,10},
+			{10,15},
+
+			{16,17},
+			{17,12},
+			{12,7},
+			{7,11},
+			{11,16},
+
+			{17,18},
+			{18,13},
+			{13,8},
+			{8,12},
+			{12,17},
+
+			{18,19},
+			{19,14},
+			{14,9},
+			{9,13},
+			{13,18},
+
+			{19,15},
+			{15,10},
+			{10,5},
+			{5,14},
+			{14,19},
+
+			{15,16},
+			{16,17},
+			{17,18},
+			{18,19},
+			{19,15},
 		};
 
 		int vertexCount = sizeof(polygon) / sizeof(*polygon);
 		int edgeCount = sizeof(edges) / sizeof(*edges);
 
-		Vec3* rotatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
-		Vec3* scaledPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
-		Vec3* translatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
+		//Vec3* rotatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
 
 		static Vec3 degrees = { 0, 0, 0 };
-		degrees.X -= 0.25;
-		degrees.Y += 0.25;
+		degrees.X -= 0.3;
 		degrees.Z -= 0.25;
 
-		static Vec3 translation = { 0 };
-		static float translationIncrease = 0.01f;
+		static Vec3 translation = { 0, 0, 10 };
+		static float translationIncrease = 0.03f;
 		translation.X += translationIncrease;
 
 		if (translation.X > 10 || translation.X < -10)
@@ -477,15 +552,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			translationIncrease = -translationIncrease;
 		}
 
-		RotatePolygonZ(polygon, rotatedPolygon, vertexCount, center, degrees.Z);
-		ScalePolygon(rotatedPolygon, scaledPolygon, vertexCount, center, 3, 3, 3);
-		TranslatePolygon(scaledPolygon, translatedPolygon, vertexCount, translation);
+		RotatePolygonX(polygon, polygon, vertexCount, center, degrees.X);
+		RotatePolygonZ(polygon, polygon, vertexCount, center, degrees.Z);
+		ScalePolygon(polygon, polygon, vertexCount, center, 2, 2, 2);
+		TranslatePolygon(polygon, polygon, vertexCount, translation);
 
-
-		DrawPolygon(translatedPolygon, edges, edgeCount, color, BackBuffer);
-
-		free(rotatedPolygon);
-		free(translatedPolygon);
+		DrawPolygon(polygon, edges, edgeCount, lineColor, BackBuffer);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,
