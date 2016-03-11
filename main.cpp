@@ -190,12 +190,12 @@ void DrawPolygon(Vec2* polygon, int vertexCount, Color color, uchar* Buffer)
 	}
 }
 
-void DrawPolygon(Vec3* polygon, Edge* edges, int edgeCount, Color color, uchar* Buffer)
+void DrawMesh(Mesh* mesh, Color color, uchar* Buffer)
 {
-	for (int i = 0; i < edgeCount; i++)
+	for (int i = 0; i < mesh->edgeCount; i++)
 	{
-		Vec3 p1 = polygon[edges[i].edge1];
-		Vec3 p2 = polygon[edges[i].edge2];
+		Vec3 p1 = mesh->vertices[mesh->edges[i].edge1];
+		Vec3 p2 = mesh->vertices[mesh->edges[i].edge2];
 
 		float fov = 90 * (PI / 180);
 		Matrix4x4 projection = { 0 };
@@ -241,7 +241,7 @@ void RotatePolygon(Vec2* polygon, Vec2* rotatedPolygon, int vertexCount, Vec2 ce
 	}
 }
 
-void RotatePolygonX(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, float degrees)
+void RotateMeshX(Mesh* mesh, Mesh* rotatedMesh, float degrees)
 {
 	float radians = degrees * (PI/180);
 
@@ -252,19 +252,19 @@ void RotatePolygonX(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 c
 	rotationMatrix.a32 = (float)sin(radians);
 	rotationMatrix.a33 = (float)cos(radians);
 
-	for (int i = 0; i < vertexCount; i++)
+	for (int i = 0; i < mesh->vertexCount; i++)
 	{
-		Vec3 vec = polygon[i];
-		vec = vec - center;
+		Vec3 vec = mesh->vertices[i];
+		vec = vec - mesh->center;
 
 		vec = rotationMatrix * vec;
 
-		vec = vec + center;
-		rotatedPolygon[i] = vec;
+		vec = vec + mesh->center;
+		rotatedMesh->vertices[i] = vec;
 	}
 }
 
-void RotatePolygonY(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, float degrees)
+void RotateMeshY(Mesh* mesh, Mesh* rotatedMesh, float degrees)
 {
 	float radians = degrees * (PI/180);
 
@@ -275,19 +275,21 @@ void RotatePolygonY(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 c
 	rotationMatrix.a31 = (float)-sin(radians);
 	rotationMatrix.a33 = (float)cos(radians);
 
-	for (int i = 0; i < vertexCount; i++)
+	for (int i = 0; i < mesh->vertexCount; i++)
 	{
-		Vec3 vec = polygon[i];
-		vec = vec - center;
+		Vec3 vec = mesh->vertices[i];
+		vec = vec - mesh->center;
 
 		vec = rotationMatrix * vec;
 
-		vec = vec + center;
-		rotatedPolygon[i] = vec;
+		vec = vec + mesh->center;
+		rotatedMesh->vertices[i] = vec;
 	}
+
+	rotatedMesh->center = mesh->center;
 }
 
-void RotatePolygonZ(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 center, float degrees)
+void RotateMeshZ(Mesh* mesh, Mesh* rotatedMesh, float degrees)
 {
 	float radians = degrees * (PI/180);
 
@@ -298,16 +300,18 @@ void RotatePolygonZ(Vec3* polygon, Vec3* rotatedPolygon, int vertexCount, Vec3 c
 	rotationMatrix.a22 = (float)cos(radians);
 	rotationMatrix.a33 = 1;
 
-	for (int i = 0; i < vertexCount; i++)
+	for (int i = 0; i < mesh->vertexCount; i++)
 	{
-		Vec3 vec = polygon[i];
-		vec = vec - center;
+		Vec3 vec = mesh->vertices[i];
+		vec = vec - mesh->center;
 
 		vec = rotationMatrix * vec;
 
-		vec = vec + center;
-		rotatedPolygon[i] = vec;
+		vec = vec + mesh->center;
+		rotatedMesh->vertices[i] = vec;
 	}
+
+	rotatedMesh->center = mesh->center;
 }
 
 void ScalePolygon(Vec2* polygon, Vec2* scaledPolygon, int vertexCount, Vec2 center, float scaleX, float scaleY)
@@ -326,21 +330,23 @@ void ScalePolygon(Vec2* polygon, Vec2* scaledPolygon, int vertexCount, Vec2 cent
 	}
 }
 
-void ScalePolygon(Vec3* polygon, Vec3* scaledPolygon, int vertexCount, Vec3 center, float scaleX, float scaleY, float scaleZ)
+void ScaleMesh(Mesh* mesh, Mesh* scaledMesh, Vec3 scale)
 {
-	for (int i = 0; i < vertexCount; i++)
+	for (int i = 0; i < mesh->vertexCount; i++)
 	{
-		Vec3 vec = polygon[i];
-		vec = vec - center;
+		Vec3 vec = mesh->vertices[i];
+		vec = vec - mesh->center;
 
 		Vec3 scaled = { 0 };
-		scaled.X = vec.X * scaleX;
-		scaled.Y = vec.Y * scaleY;
-		scaled.Z = vec.Z * scaleY;
+		scaled.X = vec.X * scale.X;
+		scaled.Y = vec.Y * scale.Y;
+		scaled.Z = vec.Z * scale.Z;
 
-		vec = scaled + center;
-		scaledPolygon[i] = vec;
+		vec = scaled + mesh->center;
+		scaledMesh->vertices[i] = vec;
 	}
+
+	scaledMesh->center = mesh->center;
 }
 
 void TranslatePolygon(Vec2* polygon, Vec2* translatedPolygon, int vertexCount, Vec2 translate)
@@ -351,12 +357,14 @@ void TranslatePolygon(Vec2* polygon, Vec2* translatedPolygon, int vertexCount, V
 	}
 }
 
-void TranslatePolygon(Vec3* polygon, Vec3* translatedPolygon, int vertexCount, Vec3 translate)
+void TranslateMesh(Mesh* mesh, Mesh* translatedMesh, Vec3 translate)
 {
-	for (int i = 0; i < vertexCount; i++)
+	for (int i = 0; i < mesh->vertexCount; i++)
 	{
-		translatedPolygon[i] = polygon[i] + translate;
+		translatedMesh->vertices[i] = mesh->vertices[i] + translate;
 	}
+
+	translatedMesh->center = mesh->center + translate;
 }
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -435,9 +443,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		ClearScreen(BackBuffer, BufferWidth, BufferHeight, bgColor);
 
-		Vec3 center = { 0, 0, 0 };
-
-		Vec3 polygon[] = {
+		Vec3 vertices[] = {
 			{ 0.607f,  0.000f,  0.795f },
 			{ 0.188f,  0.577f,  0.795f },
 			{-0.491f,  0.357f,  0.795f },
@@ -458,7 +464,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{-0.607f,  0.000f, -0.795f },
 			{-0.188f, -0.577f, -0.795f },
 			{ 0.491f, -0.357f, -0.795f },
-		};
+		}; 
 
 		Edge edges[] = {
 			{0,1},
@@ -534,10 +540,18 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{19,15},
 		};
 
-		int vertexCount = sizeof(polygon) / sizeof(*polygon);
-		int edgeCount = sizeof(edges) / sizeof(*edges);
+		Mesh mesh = { 0 };
+		mesh.center = { 0, 0, 0 };
+		mesh.vertices = (Vec3*)malloc(sizeof(vertices));
+		mesh.vertices = &vertices
+		mesh.edges = (Edge*)malloc(sizeof(vertices));
+		mesh.edges = &edges;
+		mesh.vertexCount = sizeof(mesh.vertices) / sizeof(*mesh.vertices);
+		mesh.edgeCount = sizeof(mesh.edges) / sizeof(*mesh.edges);
 
 		//Vec3* rotatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
+
+		static Vec3 scale = { 2, 2, 2 };
 
 		static Vec3 degrees = { 0, 0, 0 };
 		degrees.X -= 0.3;
@@ -552,12 +566,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			translationIncrease = -translationIncrease;
 		}
 
-		RotatePolygonX(polygon, polygon, vertexCount, center, degrees.X);
-		RotatePolygonZ(polygon, polygon, vertexCount, center, degrees.Z);
-		ScalePolygon(polygon, polygon, vertexCount, center, 2, 2, 2);
-		TranslatePolygon(polygon, polygon, vertexCount, translation);
+		RotateMeshX(&mesh, &mesh, degrees.X);
+		RotateMeshZ(&mesh, &mesh, degrees.Z);
+		ScaleMesh(&mesh, &mesh, scale);
+		TranslateMesh(&mesh, &mesh, translation);
 
-		DrawPolygon(polygon, edges, edgeCount, lineColor, BackBuffer);
+		DrawMesh(&mesh, lineColor, BackBuffer);
 
 		HDC dc = GetDC(MainWindow);
 		StretchDIBits(dc,

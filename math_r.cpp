@@ -1,4 +1,3 @@
-
 struct Vec2
 {
 	float X;
@@ -77,6 +76,15 @@ struct Edge
 {
 	int edge1;
 	int edge2;
+};
+
+struct Mesh
+{
+	Vec3 center;
+	int vertexCount;
+	int edgeCount;
+	Vec3* vertices;
+	Edge* edges;
 };
 
 inline Vec2 operator+(const Vec2& lhs, const Vec2& rhs)
