@@ -194,8 +194,8 @@ void DrawMesh(Mesh* mesh, Color color, uchar* Buffer)
 {
 	for (int i = 0; i < mesh->edgeCount; i++)
 	{
-		Vec3 p1 = mesh->vertices[mesh->edges[i].edge1];
-		Vec3 p2 = mesh->vertices[mesh->edges[i].edge2];
+		Vec3 p1 = mesh->vertices[mesh->edgeList->edges[i].edge1];
+		Vec3 p2 = mesh->vertices[mesh->edgeList->edges[i].edge2];
 
 		float fov = 90 * (PI / 180);
 		Matrix4x4 projection = { 0 };
@@ -466,88 +466,89 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{ 0.491f, -0.357f, -0.795f },
 		}; 
 
-		Edge edges[] = {
-			{0,1},
-			{1,2},
-			{2,3},
-			{3,4},
-			{4,0},
+		EdgeList edgeList = {
+			{
+				{0,1},
+				{1,2},
+				{2,3},
+				{3,4},
+				{4,0},
 
-			{0,1},
-			{1,6},
-			{6,10},
-			{10,5},
-			{5,0},
+				{0,1},
+				{1,6},
+				{6,10},
+				{10,5},
+				{5,0},
 
-			{1,2},
-			{2,7},
-			{7,11},
-			{11,6},
-			{6,1},
+				{1,2},
+				{2,7},
+				{7,11},
+				{11,6},
+				{6,1},
 
-			{2,3},
-			{3,8},
-			{8,12},
-			{12,7},
-			{7,2},
+				{2,3},
+				{3,8},
+				{8,12},
+				{12,7},
+				{7,2},
 
-			{3,4},
-			{4,9},
-			{9,13},
-			{13,8},
-			{8,3},
+				{3,4},
+				{4,9},
+				{9,13},
+				{13,8},
+				{8,3},
 
-			{4,0},
-			{0,5},
-			{5,14},
-			{14,9},
-			{9,4},
+				{4,0},
+				{0,5},
+				{5,14},
+				{14,9},
+				{9,4},
 
-			{15,16},
-			{16,11},
-			{11,6},
-			{6,10},
-			{10,15},
+				{15,16},
+				{16,11},
+				{11,6},
+				{6,10},
+				{10,15},
 
-			{16,17},
-			{17,12},
-			{12,7},
-			{7,11},
-			{11,16},
+				{16,17},
+				{17,12},
+				{12,7},
+				{7,11},
+				{11,16},
 
-			{17,18},
-			{18,13},
-			{13,8},
-			{8,12},
-			{12,17},
+				{17,18},
+				{18,13},
+				{13,8},
+				{8,12},
+				{12,17},
 
-			{18,19},
-			{19,14},
-			{14,9},
-			{9,13},
-			{13,18},
+				{18,19},
+				{19,14},
+				{14,9},
+				{9,13},
+				{13,18},
 
-			{19,15},
-			{15,10},
-			{10,5},
-			{5,14},
-			{14,19},
+				{19,15},
+				{15,10},
+				{10,5},
+				{5,14},
+				{14,19},
 
-			{15,16},
-			{16,17},
-			{17,18},
-			{18,19},
-			{19,15},
+				{15,16},
+				{16,17},
+				{17,18},
+				{18,19},
+				{19,15},
+			}
 		};
 
 		Mesh mesh = { 0 };
 		mesh.center = { 0, 0, 0 };
 		mesh.vertices = (Vec3*)malloc(sizeof(vertices));
-		mesh.vertices = &vertices
-		mesh.edges = (Edge*)malloc(sizeof(vertices));
-		mesh.edges = &edges;
+		mesh.vertices = (Vec3 *)vertices;
+		mesh.edgeList = &edgeList;
 		mesh.vertexCount = sizeof(mesh.vertices) / sizeof(*mesh.vertices);
-		mesh.edgeCount = sizeof(mesh.edges) / sizeof(*mesh.edges);
+		mesh.edgeCount = sizeof(mesh.edgeList->edges) / sizeof(*mesh.edgeList->edges);
 
 		//Vec3* rotatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
 

@@ -78,13 +78,18 @@ struct Edge
 	int edge2;
 };
 
+struct EdgeList
+{
+	Edge edges[];
+};
+
 struct Mesh
 {
 	Vec3 center;
 	int vertexCount;
 	int edgeCount;
+	EdgeList* edgeList;
 	Vec3* vertices;
-	Edge* edges;
 };
 
 inline Vec2 operator+(const Vec2& lhs, const Vec2& rhs)
