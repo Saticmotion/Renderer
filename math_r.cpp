@@ -88,7 +88,7 @@ struct Mesh
 	Vec3 center;
 	int vertexCount;
 	int edgeCount;
-	EdgeList* edgeList;
+	Edge* edges;
 	Vec3* vertices;
 };
 

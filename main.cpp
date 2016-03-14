@@ -67,45 +67,13 @@ void ClearScreen(uchar* backBuffer, int bufferWidth, int bufferHeight, Color col
 	}
 }
 
-void DrawRect(int X, int Y, int Width, int Height, uchar Red, uchar Green, uchar Blue, uchar* Buffer)
-{
-	if (X < 0)
-		X = 0;
-
-	if (Y < 0)
-		Y = 0;
-
-	if ((X + Width) > BufferWidth)
-	{
-		Width = BufferWidth - X;
-	}
-
-	if ((Y + Height) > BufferHeight)
-	{
-		Height = BufferHeight - Y;
-	}
-
-	unsigned int Color = ((Red << 16) | (Green << 8) | Blue);
-
-	// move to first pixel
-	Buffer += (BufferWidth * BytesPerPixel * Y) + (X*BytesPerPixel);
-
-	int* BufferWalker = (int*)Buffer;
-	for (int HeightWalker = 0; HeightWalker < Height; HeightWalker++)
-	{
-		for (int WidthWalker = 0; WidthWalker < Width; WidthWalker++)
-		{
-			*BufferWalker = Color;
-			BufferWalker++;
-		}
-
-		Buffer += BufferWidth * BytesPerPixel;
-		BufferWalker = (int*)Buffer;
-	}
-}
-
 void DrawLine(Vec2 p1, Vec2 p2, Color color, uchar* Buffer)
 {
+	if (p1.X < 0 || p1.Y <= 0 || p2.X <= 0 || p2.Y <= 0 ||
+		p1.X > BufferWidth - 1 || p1.Y > BufferHeight - 1 || p2.X > BufferWidth - 1 || p2.Y >= BufferHeight - 1)
+	{
+		return;
+	}
 
 	float yIncrease = (p2.Y - (float)p1.Y)/(p2.X - (float)p1.X);
 
@@ -194,8 +162,8 @@ void DrawMesh(Mesh* mesh, Color color, uchar* Buffer)
 {
 	for (int i = 0; i < mesh->edgeCount; i++)
 	{
-		Vec3 p1 = mesh->vertices[mesh->edgeList->edges[i].edge1];
-		Vec3 p2 = mesh->vertices[mesh->edgeList->edges[i].edge2];
+		Vec3 p1 = mesh->vertices[mesh->edges[i].edge1];
+		Vec3 p2 = mesh->vertices[mesh->edges[i].edge2];
 
 		float fov = 90 * (PI / 180);
 		Matrix4x4 projection = { 0 };
@@ -466,8 +434,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{ 0.491f, -0.357f, -0.795f },
 		}; 
 
-		EdgeList edgeList = {
-			{
+		Edge edges[] = {
 				{0,1},
 				{1,2},
 				{2,3},
@@ -539,18 +506,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				{17,18},
 				{18,19},
 				{19,15},
-			}
 		};
 
 		Mesh mesh = { 0 };
 		mesh.center = { 0, 0, 0 };
-		mesh.vertices = (Vec3*)malloc(sizeof(vertices));
-		mesh.vertices = (Vec3 *)vertices;
-		mesh.edgeList = &edgeList;
-		mesh.vertexCount = sizeof(mesh.vertices) / sizeof(*mesh.vertices);
-		mesh.edgeCount = sizeof(mesh.edgeList->edges) / sizeof(*mesh.edgeList->edges);
-
-		//Vec3* rotatedPolygon = (Vec3*)calloc(vertexCount * sizeof(Vec3), sizeof(Vec3));
+		mesh.vertices = (Vec3*)vertices;
+		mesh.edges = (Edge*)edges;
+		mesh.vertexCount = sizeof(vertices) / sizeof(*vertices);
+		mesh.edgeCount = sizeof(edges) / sizeof(*edges);
 
 		static Vec3 scale = { 2, 2, 2 };
 
@@ -559,10 +522,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		degrees.Z -= 0.25;
 
 		static Vec3 translation = { 0, 0, 10 };
-		static float translationIncrease = 0.03f;
+		static float translationIncrease = 0.05f;
 		translation.X += translationIncrease;
 
-		if (translation.X > 10 || translation.X < -10)
+		if (translation.X > 20 || translation.X < -20)
 		{
 			translationIncrease = -translationIncrease;
 		}
