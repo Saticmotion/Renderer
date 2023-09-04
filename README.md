@@ -6,3 +6,7 @@ It's made for Win32, so that's all it runs on for now.
 2. These settings are lost when you close the commandline, so be sure to keep it open while editing.
 3. To build the project run build.bat.
 4. To run the built exe, run run.bat.
+
+====
+The renderer is in (main.cpp)[https://github.com/Saticmotion/Renderer/blob/master/main.cpp]
+A small math library in in (math_r.cpp)[https://github.com/Saticmotion/Renderer/blob/master/math_r.cpp]
